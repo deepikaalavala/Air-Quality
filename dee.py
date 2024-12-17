@@ -1,103 +1,96 @@
 import streamlit as st
 
-# Function to save new user credentials
-def signup_page():
-    st.title("📝 Sign Up")
-    st.write("Create a new account to access the Power BI Dashboard.")
+# Set page configuration
+st.set_page_config(page_title="Login Page", layout="wide")
 
-    # Input fields for sign-up
-    new_username = st.text_input("Username", placeholder="Enter a unique username")
-    new_password = st.text_input("Password", type="password", placeholder="Enter a password")
-    confirm_password = st.text_input("Confirm Password", type="password", placeholder="Re-enter your password")
+# Define initial user credentials
+if "USER_CREDENTIALS" not in st.session_state:
+    st.session_state["USER_CREDENTIALS"] = {"admin": "password123", "user1": "pass1", "user2": "pass2"}
 
-    # Initialize session state to store users if it doesn't exist
-    if "users" not in st.session_state:
-        st.session_state["users"] = {}
+# Initialize session state for login
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+if "username" not in st.session_state:
+    st.session_state["username"] = ""
 
-    # Button to sign up
-    if st.button("Sign Up"):
-        if new_username in st.session_state["users"]:
-            st.error("Username already exists. Please choose a different one.")
-        elif not new_username or not new_password:
-            st.error("Username and password cannot be empty.")
-        elif new_password != confirm_password:
-            st.error("Passwords do not match. Please try again.")
-        else:
-            # Save the new user credentials
-            st.session_state["users"][new_username] = new_password
-            st.success("Sign-up successful! You can now log in.")
-            st.info("Go back to the Sign In page.")
+# Login function
+def login(username, password):
+    if username in st.session_state["USER_CREDENTIALS"] and st.session_state["USER_CREDENTIALS"][username] == password:
+        st.session_state["logged_in"] = True
+        st.session_state["username"] = username
+    else:
+        st.error("Invalid username or password. Please try again.")
 
-# Function for login page
-def login_page():
-    st.title("🔐 Sign In")
-    st.write("Please log in to access the Power BI Dashboard.")
+# Signup function
+def signup(new_username, new_password, confirm_password):
+    if new_username in st.session_state["USER_CREDENTIALS"]:
+        st.error("Username already exists. Please choose a different username.")
+    elif new_password != confirm_password:
+        st.error("Passwords do not match. Please try again.")
+    else:
+        st.session_state["USER_CREDENTIALS"][new_username] = new_password
+        st.success("Signup successful! Please log in.")
 
-    # Input fields for login
-    username = st.text_input("Username", placeholder="Enter your username")
-    password = st.text_input("Password", type="password", placeholder="Enter your password")
+# Logout function
+def logout():
+    st.session_state["logged_in"] = False
+    st.session_state["username"] = ""
 
-    # Login button
-    if st.button("Sign In"):
-        # Check user credentials
-        if "users" not in st.session_state or username not in st.session_state["users"]:
-            st.error("User not found. Please sign up first.")
-        elif st.session_state["users"][username] == password:
-            st.session_state["authenticated"] = True
-            st.session_state["current_user"] = username
-            st.success("Login successful! Redirecting...")
-        else:
-            st.error("Invalid username or password. Please try again.")
-
-# Power BI Dashboard Page
-def dashboard_page():
-    st.title("Air Quality Index Dasboard (2018 - 22)")
-    st.write(f"Welcome {st.session_state['current_user']}! Air Quality Index Dashboard!")
-
-    # Power BI Embed URL
-    power_bi_url="https://app.powerbi.com/view?r=eyJrIjoiMWE2YWFiYzYtMjM2Ny00YTg1LTg3MmMtZTM4ZGNkMjlhZTQ4IiwidCI6ImY1YjcxNDhiLTNmYzYtNDYwNi04MjgzLWM3MjJmNDQzOGYxMiJ9"
-
-    # Embed Power BI Dashboard using iframe
+# Main Page Logic
+if not st.session_state["logged_in"]:
+    # Hide sidebar for the login/signup page
     st.markdown(
-        f"""
-        <iframe 
-            src="{power_bi_url}" 
-            width="100%" 
-            height="600" 
-            frameborder="0" 
-            allowfullscreen="true">
-        </iframe>
+        """
+        <style>
+            [data-testid="stSidebar"] {
+                display: none;
+            }
+        </style>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
-    # Sign-out button
-    if st.button("Sign Out"):
-        st.session_state["authenticated"] = False
-        st.session_state["current_user"] = None
-        st.experimental_rerun()
+    # Tabs for Login and Signup
+    tab1, tab2 = st.tabs(["Login", "Signup"])
 
-# Main App Logic
-def main():
-    # Initialize session state for authentication and user management
-    if "authenticated" not in st.session_state:
-        st.session_state["authenticated"] = False
-    if "current_user" not in st.session_state:
-        st.session_state["current_user"] = None
-    if "users" not in st.session_state:
-        st.session_state["users"] = {}  # Store users as username: password
+    # Login Tab
+    with tab1:
+        st.title("Login Page")
 
-    # Navigation between Sign In and Sign Up
-    menu = ["Sign In", "Sign Up"]
-    choice = st.sidebar.selectbox("Navigation", menu)
+        # Use columns to shorten text boxes
+        col1, col2, col3 = st.columns([2, 4, 2])
+        with col2:
+            username = st.text_input("Username", key="login_username", max_chars=20)
+            password = st.text_input("Password", type="password", key="login_password", max_chars=20)
+            if st.button("Login"):
+                login(username, password)
 
-    if st.session_state["authenticated"]:
-        dashboard_page()
-    elif choice == "Sign In":
-        login_page()
-    elif choice == "Sign Up":
-        signup_page()
+    # Signup Tab
+    with tab2:
+        st.title("Signup Page")
 
-# Run the Streamlit App
-if __name__ == "main":
-    main()
+        # Use columns to shorten text boxes
+        col1, col2, col3 = st.columns([2, 4, 2])
+        with col2:
+            new_username = st.text_input("New Username", key="signup_username", max_chars=20)
+            new_password = st.text_input("New Password", type="password", key="signup_password", max_chars=20)
+            confirm_password = st.text_input("Confirm Password", type="password", key="signup_confirm_password", max_chars=20)
+            if st.button("Signup"):
+                signup(new_username, new_password, confirm_password)
+
+else:
+    # Sidebar for Logout Button Only
+    st.sidebar.button("Logout", on_click=logout)
+
+    # Main content after login
+    st.title(f"Welcome, {st.session_state['username']}!")
+    st.write("You are successfully logged in.")
+
+    # Embed Power BI report
+    st.markdown(
+        """
+        <iframe title="Power BI Report" width="100%" height="600" src="https://app.powerbi.com/view?r=eyJrIjoiMWE2YWFiYzYtMjM2Ny00YTg1LTg3MmMtZTM4ZGNkMjlhZTQ4IiwidCI6ImY1YjcxNDhiLTNmYzYtNDYwNi04MjgzLWM3MjJmNDQzOGYxMiJ9" frameborder="0" allowFullScreen="true"></iframe>
+        """,
+        unsafe_allow_html=True,
+    )
+#https://app.powerbi.com/view?r=eyJrIjoiZGJkYTk1NGQtNWUzMi00MmJhLThmZDMtNTAzOTNjMmRmZWM4IiwidCI6IjkzZTljMTgyLTdhOWMtNGI4YS04YzY1LTM3OTMyNDZlYzgzMyJ9
